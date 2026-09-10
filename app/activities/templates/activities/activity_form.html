@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · JF-Manager{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'activities:list' %}">Termine</a><span>›</span><span>{{ heading }}</span></div>
+<div class="page-header"><div><a class="back-link" href="{% if activity %}{% url 'activities:attendance' activity.pk %}{% else %}{% url 'activities:list' %}{% endif %}">← Zurück</a><p class="eyebrow">Terminverwaltung</p><h1>{{ heading }}</h1></div></div>
+<form method="post" novalidate data-default-times-url="{% url 'activities:type_defaults' %}" data-editing="{% if activity %}true{% else %}false{% endif %}">
+  {% csrf_token %}
+  <section class="card"><div class="form-grid activity-form">
+    {% for field in form %}<div class="field {% if field.name == 'description' %}span-full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>{% endfor %}
+  </div></section>
+  <div class="sticky-actions"><a class="button secondary" href="{% if activity %}{% url 'activities:attendance' activity.pk %}{% else %}{% url 'activities:list' %}{% endif %}">Abbrechen</a><button class="button" type="submit">Speichern</button></div>
+</form>
+<script>
+(function(){
+ const form=document.querySelector('form[data-default-times-url]');
+ const typeField=form?.querySelector('[data-activity-type]');
+ const startField=form?.querySelector('[data-starts-at]');
+ const endField=form?.querySelector('[data-ends-at]');
+ if(!form||!typeField||!startField||!endField)return;
+ let userChangedStart=form.dataset.editing==='true';
+ let userChangedEnd=form.dataset.editing==='true';
+ startField.addEventListener('input',()=>userChangedStart=true);
+ endField.addEventListener('input',()=>userChangedEnd=true);
+ typeField.addEventListener('change',async()=>{
+   try{
+     const response=await fetch(`${form.dataset.defaultTimesUrl}?type=${encodeURIComponent(typeField.value)}`,{headers:{'X-Requested-With':'XMLHttpRequest'}});
+     if(!response.ok)return;
+     const data=await response.json();
+     const date=(startField.value||new Date().toISOString().slice(0,10)).slice(0,10);
+     if(data.start && !userChangedStart) startField.value=`${date}T${data.start}`;
+     if(data.end && !userChangedEnd) endField.value=`${date}T${data.end}`;
+   }catch(e){console.debug('Standardzeiten konnten nicht geladen werden.',e)}
+ });
+})();
+</script>
+{% endblock %}

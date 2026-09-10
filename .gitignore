@@ -1,0 +1,37 @@
+# Runtime configuration / secrets
+.env
+.env.*
+!.env.example
+.env.pre-secrets
+secrets/*.txt
+!secrets/README.md
+
+# User data / backups
+media/
+backups/
+*.dump
+*.backup
+*.sqlite3
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django generated files
+staticfiles/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local logs / temp
+*.log
+*.tmp

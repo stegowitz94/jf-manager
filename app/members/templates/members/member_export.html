@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Mitglieder exportieren · JF-Manager{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'members:list' %}">Mitglieder</a><span>›</span><span>Export</span></div><div class="page-header"><a class="back-link" href="{% url 'members:list' %}">← Zurück</a><div><h1>Mitglieder exportieren</h1><p class="muted">Die Datei wird direkt erstellt und nicht dauerhaft auf dem Server gespeichert.</p></div></div>
+<form method="post" class="card export-form">{% csrf_token %}
+  <input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="status" value="{{ status }}">
+  <fieldset><legend>Format</legend><label><input type="radio" name="format" value="xlsx" checked> Excel (.xlsx)</label><label><input type="radio" name="format" value="pdf"> PDF</label></fieldset>
+  <fieldset><legend>Mitgliederstatus</legend>{% for value,label in status_choices %}<label><input type="checkbox" name="statuses" value="{{ value }}" {% if value != 'resigned' %}checked{% endif %}> {{ label }}</label>{% endfor %}</fieldset>
+  <fieldset><legend>PDF-Vorlage</legend><label><input type="radio" name="template" value="compact" checked> Kompakte Liste</label><label><input type="radio" name="template" value="contacts"> Kontaktliste</label><label><input type="radio" name="template" value="full"> Stammdatenliste</label><p class="muted">Beim Excel-Export werden alle verfügbaren Felder ausgegeben.</p></fieldset>
+  <div class="actions"><button class="button" type="submit">Export erstellen</button><a class="button secondary" href="{% url 'members:list' %}">Abbrechen</a></div>
+</form>
+{% endblock %}

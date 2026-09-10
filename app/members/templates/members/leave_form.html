@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Beurlaubung · JF-Manager{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'members:list' %}">Mitglieder</a><span>›</span><span>Beurlaubung</span></div><div class="page-header"><a class="back-link" href="{% url 'members:detail' member.pk %}">← Zurück</a><div><h1>Beurlaubung {% if leave %}bearbeiten{% else %}anlegen{% endif %}</h1><p class="muted">{{ member.first_name }} {{ member.last_name }}</p></div></div>
+<form method="post" novalidate>{% csrf_token %}<div class="card"><div class="form-grid">{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>{% for error in form.non_field_errors %}<div class="error">{{ error }}</div>{% endfor %}</div><div class="actions"><button class="button" type="submit">Speichern</button><a class="button secondary" href="{{ member.get_absolute_url }}">Abbrechen</a></div></form>
+{% endblock %}

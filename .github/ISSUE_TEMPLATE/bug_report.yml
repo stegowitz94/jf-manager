@@ -1,0 +1,46 @@
+name: Fehlerbericht
+description: Einen reproduzierbaren Fehler in JF-Manager melden
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Fehlerbericht. Bitte keine personenbezogenen Daten, Passwörter, `.env`-Dateien oder Secrets veröffentlichen.
+  - type: input
+    id: version
+    attributes:
+      label: JF-Manager-Version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Bereitstellung
+      options:
+        - Direktes HTTP / lokales Netz
+        - Cloudflare Tunnel
+        - Reverse Proxy
+        - Andere
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Fehlerbeschreibung
+      description: Was ist passiert und was wurde erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Schritte zum Reproduzieren
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevante Logs
+      description: Bitte Secrets und personenbezogene Daten vollständig entfernen.
+      render: shell

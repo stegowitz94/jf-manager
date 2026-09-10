@@ -1,0 +1,19 @@
+{
+  "name": "{{ app_settings.organisation_name|escapejs }} – JF-Manager",
+  "short_name": "{{ app_settings.short_name|default:'JF-Manager'|escapejs }}",
+  "description": "Mobile Verwaltung für die Jugendfeuerwehr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111318",
+  "theme_color": "#b42335",
+  "orientation": "any",
+  "icons": [
+    {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Neue Gruppenstunde", "url": "/termine/neu/", "icons": [{"src": "/static/icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Mitglieder", "url": "/mitglieder/", "icons": [{"src": "/static/icons/icon-192.png", "sizes": "192x192"}]}
+  ]
+}

@@ -1,0 +1,25 @@
+{% load static %}<!doctype html>
+<html lang="de" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111318"><title>JF-Manager · Ersteinrichtung</title><link rel="stylesheet" href="{% static 'css/app.css' %}"></head>
+<body class="setup-body"><main class="setup-shell">
+<header class="setup-hero"><span class="setup-kicker">JF-Manager 1.0</span><h1>Ersteinrichtung</h1><p>Neue Jugendfeuerwehr einrichten oder eine vorhandene JF-Manager-Instanz aus einem Backup übernehmen.</p></header>
+{% if messages %}{% for message in messages %}<div class="setup-alert">{{ message }}</div>{% endfor %}{% endif %}
+<section class="setup-step"><h2>Wie möchtest du starten?</h2><div class="setup-grid">
+  <div class="setup-card"><h3>Neue Instanz</h3><p>Organisation und erstes Administratorkonto neu anlegen.</p><a class="button" href="#new-install">Neu einrichten</a></div>
+  <div class="setup-card"><h3>Backup wiederherstellen</h3><p>Datenbank und Medien einer vorhandenen JF-Manager-Instanz übernehmen. Server-Secrets und die neue öffentliche URL bleiben serverbezogen.</p><a class="button" href="#restore-install">Backup einspielen</a></div>
+</div></section>
+<section id="restore-install" class="setup-step"><h2>Vorhandene Installation wiederherstellen</h2><p class="muted">Das Backup wird vollständig geprüft (Format, ZIP-Integrität, Datenbank-Prüfsumme und pg_restore-Lesbarkeit), bevor die Datenbank ersetzt wird. Danach werden automatisch die Migrationen dieser Version ausgeführt.</p>
+<form method="post" action="{% url 'core:setup_restore' %}" enctype="multipart/form-data" class="setup-card">{% csrf_token %}
+<label>JF-Manager-Backup (.zip)<input type="file" name="backup_file" accept=".zip,application/zip" required></label>
+<label class="setup-confirm"><input type="checkbox" name="acknowledge_restore" value="1" required><span>Ich möchte diese neue Instanz mit dem ausgewählten Backup wiederherstellen.</span></label>
+<button class="button primary" type="submit">Backup prüfen und wiederherstellen</button></form></section>
+<div id="new-install" class="setup-progress" aria-label="Einrichtungsschritte"><span class="active">1 System</span><span>2 Organisation</span><span>3 Administrator</span><span>4 Grundeinstellungen</span><span>5 E-Mail</span><span>6 Datenschutz</span><span>7 Start</span></div>
+<form method="post" class="setup-card">{% csrf_token %}
+{% if organisation_form.errors or admin_form.errors %}<div class="setup-alert">Bitte prüfe die markierten Eingaben.</div>{% endif %}
+<section class="setup-step"><h2>1 · Systemprüfung</h2><div class="setup-checks"><div class="setup-check {% if infrastructure.database %}ok{% endif %}">PostgreSQL <b>{% if infrastructure.database %}✓{% else %}–{% endif %}</b></div><div class="setup-check {% if infrastructure.redis %}ok{% endif %}">Redis <b>{% if infrastructure.redis %}✓{% else %}!{% endif %}</b></div><div class="setup-check {% if infrastructure.secrets %}ok{% endif %}">Secrets <b>{% if infrastructure.secrets %}✓{% else %}!{% endif %}</b></div></div></section>
+<section class="setup-step"><h2>2 · Organisation</h2><div class="setup-grid">{% for field in organisation_form %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}</div></section>
+<section class="setup-step"><h2>3 · Erster Administrator</h2><p class="muted">Das erste Konto erhält Administratorrechte. Das Passwort wird ausschließlich als Django-Passworthash gespeichert.</p><div class="setup-grid">{% for field in admin_form %}{% if field.name != "privacy_ack" %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}</div></section>
+<section class="setup-step"><h2>4 · Grundeinstellungen</h2><p>Für Gruppenstunden werden zunächst <strong>17:15–18:45 Uhr</strong> hinterlegt. Die Werte können später geändert werden.</p></section>
+<section class="setup-step"><h2>5 · E-Mail</h2><div class="setup-check {% if infrastructure.smtp %}ok{% endif %}">SMTP {% if infrastructure.smtp %}konfiguriert{% else %}noch nicht konfiguriert{% endif %}</div><p class="muted">Server: {{ smtp_host|default:"–" }} · Port: {{ smtp_port }} · Absender: {{ default_from_email }}. Das SMTP-Passwort wird nicht aus einem Backup übernommen.</p></section>
+<section class="setup-step"><h2>6 · Datenschutz & Betrieb</h2><p>JF-Manager verarbeitet personenbezogene und optional besonders schützenswerte Daten. Der Betreiber ist für Rechtsgrundlage, Berechtigungen, sichere Erreichbarkeit, Backups und Aufbewahrung verantwortlich.</p><label class="setup-confirm">{{ admin_form.privacy_ack }} <span>Ich habe die Hinweise zur Kenntnis genommen.</span></label>{{ admin_form.privacy_ack.errors }}</section>
+<section class="setup-step setup-finish"><h2>7 · Bereit zum Start</h2><button class="button primary" type="submit">Einrichtung abschließen</button></section>
+</form></main></body></html>

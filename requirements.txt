@@ -1,0 +1,12 @@
+Django>=5.2,<5.3
+psycopg[binary]>=3.2,<3.3
+gunicorn>=23,<24
+celery>=5.6,<5.7
+redis>=6,<7
+django-environ>=0.12,<0.13
+whitenoise>=6.9,<7
+openpyxl>=3.1,<4
+Pillow>=11,<12
+reportlab>=4.2,<5
+
+pywebpush>=2.0,<3

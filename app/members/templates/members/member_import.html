@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Mitglieder importieren · JF-Manager{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'members:list' %}">Mitglieder</a><span>›</span><span>Import</span></div>
+<a class="back-link" href="{% url 'members:list' %}">← Zurück</a>
+<div class="page-header">
+  <div><h1>Mitglieder importieren</h1><p class="muted">Excel-Spalten Schritt für Schritt den Feldern im JF-Manager zuordnen</p></div>
+  <a class="button secondary" href="{% url 'members:import_template' %}">Importvorlage herunterladen</a>
+</div>
+
+<div class="card import-steps" aria-label="Importschritte">
+  <span class="{% if step == 'upload' %}active{% endif %}">1 Datei</span>
+  <span class="{% if step == 'sheet' %}active{% endif %}">2 Tabellenblatt</span>
+  <span class="{% if step == 'mapping' %}active{% endif %}">3 Zuordnung</span>
+  <span class="{% if step == 'preview' %}active{% endif %}">4 Vorschau</span>
+</div>
+
+{% if step == "upload" %}
+<form method="post" enctype="multipart/form-data" class="card" novalidate>{% csrf_token %}
+  <h2>1. Excel-Datei auswählen</h2>
+  <p class="muted">Die Datei wird nur für den laufenden Import zwischengespeichert und danach automatisch gelöscht.</p>
+  <div class="field"><label for="{{ upload_form.file.id_for_label }}">{{ upload_form.file.label }}</label>{{ upload_form.file }}{% for error in upload_form.file.errors %}<div class="error">{{ error }}</div>{% endfor %}<small class="muted">{{ upload_form.file.help_text }}</small></div>
+  <div class="actions" style="margin-top:1rem"><button class="button" type="submit" name="upload">Datei einlesen</button></div>
+</form>
+{% endif %}
+
+{% if step == "sheet" %}
+<div class="card"><strong>Datei:</strong> {{ original_name }}</div>
+<form method="post" class="card" novalidate>{% csrf_token %}
+  <h2>2. Tabellenblatt und Kopfzeile</h2>
+  <p class="muted">Wähle das Blatt und die Zeile, in der Überschriften wie „Vorname“, „Geburtstag“ oder „Telefon“ stehen.</p>
+  {{ sheet_form.non_field_errors }}
+  <div class="form-grid">
+    <div class="field"><label for="{{ sheet_form.sheet_name.id_for_label }}">{{ sheet_form.sheet_name.label }}</label>{{ sheet_form.sheet_name }}{% for error in sheet_form.sheet_name.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+    <div class="field"><label for="{{ sheet_form.header_row.id_for_label }}">{{ sheet_form.header_row.label }}</label>{{ sheet_form.header_row }}{% for error in sheet_form.header_row.errors %}<div class="error">{{ error }}</div>{% endfor %}<small class="muted">{{ sheet_form.header_row.help_text }}</small></div>
+  </div>
+  <div class="actions"><button class="button" type="submit" name="choose_sheet">Spalten einlesen</button><button class="button secondary" type="submit" name="cancel">Abbrechen</button></div>
+</form>
+{% if workbook_info %}
+<div class="card table-wrap"><h3>Erkannte Tabellenblätter</h3><table><thead><tr><th>Tabellenblatt</th><th>Zeilen</th><th>Spalten</th></tr></thead><tbody>{% for sheet in workbook_info.sheets %}<tr><td>{{ sheet.name }}</td><td>{{ sheet.max_row }}</td><td>{{ sheet.max_column }}</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endif %}
+
+{% if step == "mapping" %}
+<div class="card"><strong>Datei:</strong> {{ original_name }}<br><span class="muted">Ordne jedem benötigten JF-Manager-Feld die passende Spalte deiner Excel-Datei zu. Automatisch erkannte Werte sind bereits vorausgewählt.</span></div>
+<form method="post" class="card" novalidate>{% csrf_token %}
+  <h2>3. Spalten zuordnen</h2>
+  {{ mapping_form.sheet_name }}{{ mapping_form.header_row }}
+  {% for error in mapping_form.non_field_errors %}<div class="error">{{ error }}</div>{% endfor %}
+  <div class="mapping-grid">
+    {% for field in mapping_form.visible_fields %}
+      <div class="field mapping-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+    {% endfor %}
+  </div>
+  <p class="muted">* Pflichtfelder. Nicht benötigte Spalten können auf „Nicht importieren“ stehen.</p>
+  <div class="actions"><button class="button" type="submit" name="preview">Vorschau prüfen</button><button class="button secondary" type="submit" name="cancel">Abbrechen</button></div>
+</form>
+{% if sample_rows %}
+<div class="card table-wrap"><h3>Datenvorschau aus Excel</h3><table><thead><tr>{% for header in headers %}<th>{{ header }}</th>{% endfor %}</tr></thead><tbody>{% for row in sample_rows %}<tr>{% for value in row %}<td>{{ value|default:"–" }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endif %}
+
+{% if step == "preview" and preview %}
+<div class="card">
+  <h2>4. Importdaten prüfen und bearbeiten</h2>
+  <p>{{ preview.total }} Zeilen erkannt. Korrigiere fehlerhafte Werte direkt oder entferne den Haken bei Zeilen, die nicht importiert werden sollen.</p>
+  <div class="actions compact-actions">
+    <button class="button secondary" type="button" id="select-all">Alle auswählen</button>
+    <button class="button secondary" type="button" id="select-valid">Nur fehlerfreie</button>
+    <button class="button secondary" type="button" id="select-none">Alle abwählen</button>
+  </div>
+</div>
+<form method="post" id="editable-import-form">{% csrf_token %}
+  <div class="import-row-list">
+  {% for row in preview.rows %}
+    <section class="card import-row {% if row.errors %}has-errors{% elif row.warnings %}has-warnings{% endif %}" data-valid="{% if row.errors %}false{% else %}true{% endif %}">
+      <div class="import-row-head">
+        <label class="import-toggle">
+          <input type="checkbox" name="row-{{ forloop.counter0 }}-selected" {% if row.selected %}checked{% endif %}>
+          <strong>Excel-Zeile {{ row.data.excel_row }}</strong>
+        </label>
+        <span class="row-summary">{{ row.data.first_name }} {{ row.data.last_name }}</span>
+      </div>
+
+      {% if row.errors or row.warnings %}
+      <div class="validation-box">
+        {% for error in row.errors %}<div class="error">✕ {{ error }}</div>{% endfor %}
+        {% for warning in row.warnings %}<div class="warning">⚠ {{ warning }}</div>{% endfor %}
+      </div>
+      {% else %}<div class="status-text-ok">✓ Importbereit</div>{% endif %}
+
+      <div class="edit-grid">
+        <div class="field"><label>Lfd. Nr.</label><input type="number" min="1" name="row-{{ forloop.counter0 }}-sequential_number" value="{{ row.data.sequential_number|default_if_none:'' }}"></div>
+        <div class="field"><label>Vorname *</label><input type="text" name="row-{{ forloop.counter0 }}-first_name" value="{{ row.data.first_name }}"></div>
+        <div class="field"><label>Nachname *</label><input type="text" name="row-{{ forloop.counter0 }}-last_name" value="{{ row.data.last_name }}"></div>
+        <div class="field"><label>Geburtsdatum *</label><input type="date" name="row-{{ forloop.counter0 }}-birth_date" value="{{ row.data.birth_date|default_if_none:'' }}"></div>
+        <div class="field"><label>Geschlecht</label><select name="row-{{ forloop.counter0 }}-gender"><option value="">–</option><option value="male" {% if row.data.gender == 'male' %}selected{% endif %}>Männlich</option><option value="female" {% if row.data.gender == 'female' %}selected{% endif %}>Weiblich</option><option value="diverse" {% if row.data.gender == 'diverse' %}selected{% endif %}>Divers</option><option value="not_specified" {% if row.data.gender == 'not_specified' %}selected{% endif %}>Keine Angabe</option></select></div>
+        <div class="field"><label>Beitrittsdatum</label><input type="date" name="row-{{ forloop.counter0 }}-entry_date" value="{{ row.data.entry_date|default_if_none:'' }}"></div>
+        <div class="field"><label>JF-Ausweisnummer</label><input type="text" name="row-{{ forloop.counter0 }}-jf_card_number" value="{{ row.data.jf_card_number|default_if_none:'' }}"></div>
+        <div class="field"><label>Status</label><select name="row-{{ forloop.counter0 }}-activity_status"><option value="active" {% if row.data.activity_status == 'active' %}selected{% endif %}>Aktiv</option><option value="on_leave" {% if row.data.activity_status == 'on_leave' %}selected{% endif %}>Beurlaubt</option><option value="transition" {% if row.data.activity_status == 'transition' %}selected{% endif %}>Übergang</option><option value="resigned" {% if row.data.activity_status == 'resigned' %}selected{% endif %}>Austritt</option></select></div>
+        <div class="field span-2"><label>Straße und Hausnummer</label><input type="text" name="row-{{ forloop.counter0 }}-street" value="{{ row.data.street }}"></div>
+        <div class="field"><label>PLZ</label><input type="text" name="row-{{ forloop.counter0 }}-postal_code" value="{{ row.data.postal_code }}"></div>
+        <div class="field"><label>Ort</label><input type="text" name="row-{{ forloop.counter0 }}-city" value="{{ row.data.city }}"></div>
+        <div class="field"><label>Telefon</label><input type="text" name="row-{{ forloop.counter0 }}-phone" value="{{ row.data.phone }}"></div>
+        <div class="field"><label>Mobil</label><input type="text" name="row-{{ forloop.counter0 }}-mobile" value="{{ row.data.mobile }}"></div>
+        <div class="field span-2"><label>E-Mail</label><input type="email" name="row-{{ forloop.counter0 }}-email" value="{{ row.data.email }}"></div>
+        <label class="check-field"><input type="checkbox" name="row-{{ forloop.counter0 }}-photo_video_permission" {% if row.data.photo_video_permission %}checked{% endif %}> Foto-/Videoeinwilligung</label>
+        <label class="check-field"><input type="checkbox" name="row-{{ forloop.counter0 }}-divera_permission" {% if row.data.divera_permission %}checked{% endif %}> DIVERA-Einwilligung</label>
+        <div class="field span-2"><label>Schule oder Arbeitgeber</label><input type="text" name="row-{{ forloop.counter0 }}-school_or_employer" value="{{ row.data.school_or_employer }}"></div>
+        <div class="field"><label>Berufsausbildung</label><input type="text" name="row-{{ forloop.counter0 }}-vocational_training" value="{{ row.data.vocational_training }}"></div>
+        <div class="field"><label>Voraussichtliches Berufsziel</label><input type="text" name="row-{{ forloop.counter0 }}-career_goal" value="{{ row.data.career_goal }}"></div>
+        <div class="field span-2"><label>Weitere Vereine oder Organisationen</label><textarea name="row-{{ forloop.counter0 }}-other_organizations" rows="2">{{ row.data.other_organizations }}</textarea></div>
+      </div>
+      <details class="guardian-edit sensitive-import">
+        <summary>🔒 Freiwillige Gesundheitsangaben</summary>
+        <p class="muted">Besonders schützenswert; nicht Bestandteil normaler Exporte.</p>
+        <div class="edit-grid">
+          <div class="field span-2"><label>Gesundheitliche Hinweise</label><textarea name="row-{{ forloop.counter0 }}-health_notes" rows="3">{{ row.data.health_notes }}</textarea></div>
+          <div class="field"><label>Schwimmfähigkeit</label><select name="row-{{ forloop.counter0 }}-swimming_status"><option value="not_specified" {% if row.data.swimming_status == 'not_specified' %}selected{% endif %}>Keine Angabe</option><option value="swimmer" {% if row.data.swimming_status == 'swimmer' %}selected{% endif %}>Schwimmer</option><option value="non_swimmer" {% if row.data.swimming_status == 'non_swimmer' %}selected{% endif %}>Nichtschwimmer</option></select></div>
+          <div class="field"><label>Krankenversicherung</label><input type="text" name="row-{{ forloop.counter0 }}-health_insurance" value="{{ row.data.health_insurance }}"></div>
+        </div>
+      </details>
+
+      {% for guardian in row.data.guardians %}
+      <details class="guardian-edit" {% if forloop.first %}open{% endif %}>
+        <summary>Erziehungsberechtigte Person {{ guardian.priority }}{% if forloop.first %} *{% endif %}</summary>
+        <div class="edit-grid">
+          <div class="field"><label>Vorname</label><input type="text" name="row-{{ forloop.parentloop.counter0 }}-guardian{{ guardian.priority }}_first_name" value="{{ guardian.first_name }}"></div>
+          <div class="field"><label>Nachname</label><input type="text" name="row-{{ forloop.parentloop.counter0 }}-guardian{{ guardian.priority }}_last_name" value="{{ guardian.last_name }}"></div>
+          <div class="field"><label>Telefon</label><input type="text" name="row-{{ forloop.parentloop.counter0 }}-guardian{{ guardian.priority }}_phone" value="{{ guardian.phone }}"></div>
+          <div class="field"><label>E-Mail</label><input type="email" name="row-{{ forloop.parentloop.counter0 }}-guardian{{ guardian.priority }}_email" value="{{ guardian.email }}"></div>
+        </div>
+      </details>
+      {% endfor %}
+      {% if row.data.guardians|length < 2 %}
+      <details class="guardian-edit">
+        <summary>Erziehungsberechtigte Person 2 (optional)</summary>
+        <div class="edit-grid">
+          <div class="field"><label>Vorname</label><input type="text" name="row-{{ forloop.counter0 }}-guardian2_first_name"></div>
+          <div class="field"><label>Nachname</label><input type="text" name="row-{{ forloop.counter0 }}-guardian2_last_name"></div>
+          <div class="field"><label>Telefon</label><input type="text" name="row-{{ forloop.counter0 }}-guardian2_phone"></div>
+          <div class="field"><label>E-Mail</label><input type="email" name="row-{{ forloop.counter0 }}-guardian2_email"></div>
+        </div>
+      </details>
+      {% endif %}
+    </section>
+  {% endfor %}
+  </div>
+  <div class="sticky-import-actions">
+    <button class="button" type="submit" name="confirm">Ausgewählte gültige Zeilen importieren</button>
+    <button class="button secondary" type="submit" name="cancel">Import abbrechen</button>
+  </div>
+</form>
+<script>
+(() => {
+  const rows = [...document.querySelectorAll('.import-row')];
+  const setChecked = fn => rows.forEach(row => row.querySelector('input[type="checkbox"][name$="-selected"]').checked = fn(row));
+  document.getElementById('select-all')?.addEventListener('click', () => setChecked(() => true));
+  document.getElementById('select-none')?.addEventListener('click', () => setChecked(() => false));
+  document.getElementById('select-valid')?.addEventListener('click', () => setChecked(row => row.dataset.valid === 'true'));
+  rows.forEach(row => {
+    const checkbox = row.querySelector('input[type="checkbox"][name$="-selected"]');
+    const sync = () => row.classList.toggle('excluded', !checkbox.checked);
+    checkbox.addEventListener('change', sync); sync();
+  });
+})();
+</script>
+{% endif %}
+
+<style>
+.import-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;padding:.75rem}.import-steps span{padding:.65rem;text-align:center;border-radius:.55rem;background:var(--surface-2,rgba(127,127,127,.12));font-size:.9rem}.import-steps span.active{background:var(--primary,#b42335);color:#fff;font-weight:700}.mapping-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.8rem}.mapping-field{padding:.75rem;border:1px solid var(--border-color,rgba(127,127,127,.25));border-radius:.65rem}.mapping-field select{width:100%}@media(max-width:700px){.import-steps{grid-template-columns:1fr 1fr}.mapping-grid{grid-template-columns:1fr}}
+.import-row-list{display:grid;gap:1rem}.import-row{transition:opacity .2s ease,border-color .2s ease}.import-row.excluded{opacity:.48}.import-row.has-errors{border-color:var(--danger,#c0392b)}.import-row.has-warnings{border-color:var(--warning,#d89b18)}.import-row-head{display:flex;justify-content:space-between;gap:1rem;align-items:center;margin-bottom:.65rem}.import-toggle{display:flex;align-items:center;gap:.55rem}.validation-box{padding:.65rem;border-radius:.55rem;background:rgba(192,57,43,.08);margin-bottom:.8rem}.warning{color:var(--warning,#d89b18)}.edit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}.edit-grid .field{margin:0}.edit-grid input,.edit-grid select{width:100%}.span-2{grid-column:span 2}.check-field{display:flex;align-items:center;gap:.45rem;padding:.65rem}.guardian-edit{margin-top:.8rem;border-top:1px solid var(--border-color,rgba(127,127,127,.25));padding-top:.65rem}.guardian-edit summary{cursor:pointer;font-weight:700;margin-bottom:.7rem}.sticky-import-actions{position:sticky;bottom:0;display:flex;gap:.7rem;padding:1rem;background:var(--surface,#181b20);border-top:1px solid var(--border-color,rgba(127,127,127,.25));z-index:5}.compact-actions{flex-wrap:wrap}@media(max-width:900px){.edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.edit-grid{grid-template-columns:1fr}.span-2{grid-column:auto}.import-row-head{align-items:flex-start;flex-direction:column}.sticky-import-actions{flex-direction:column}}
+ .sensitive-import{border-left:3px solid var(--warning,#d89b18);padding-left:.8rem}</style>
+{% endblock %}

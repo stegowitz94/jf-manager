@@ -1,0 +1,4 @@
+from django.db import migrations,models
+class Migration(migrations.Migration):
+    initial=True; dependencies=[]
+    operations=[migrations.CreateModel(name="NotificationLog",fields=[("id",models.BigAutoField(auto_created=True,primary_key=True,serialize=False,verbose_name="ID")),("event_key",models.CharField(max_length=255,unique=True,verbose_name="Ereignisschlüssel")),("notification_type",models.CharField(max_length=50,verbose_name="Typ")),("subject",models.CharField(max_length=255,verbose_name="Betreff")),("recipients",models.TextField(verbose_name="Empfänger")),("status",models.CharField(choices=[("sent","Versendet"),("failed","Fehlgeschlagen")],max_length=20,verbose_name="Status")),("error",models.TextField(blank=True,verbose_name="Fehler")),("created_at",models.DateTimeField(auto_now_add=True,verbose_name="Zeitpunkt"))],options={"ordering":("-created_at",),"verbose_name":"Benachrichtigung","verbose_name_plural":"Benachrichtigungen"})]

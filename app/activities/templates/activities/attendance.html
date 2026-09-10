@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Anwesenheit · {{ activity.title }}{% endblock %}
+{% block content %}
+<div class="attendance-page" data-attendance-page>
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'activities:list' %}">Termine</a><span>›</span><span>Anwesenheit</span></div><div class="page-header attendance-header"><div><a class="back-link" href="{% url 'activities:list' %}">← Zurück</a><p class="eyebrow">{{ activity.get_activity_type_display }}</p><h1>{{ activity.title }}</h1><p class="muted">{{ activity.starts_at|date:"d.m.Y, H:i" }} Uhr{% if activity.location %} · {{ activity.location }}{% endif %}</p>{% if activity.activity_type == "group" %}<p><span class="badge">{{ activity.get_participation_mode_display }}</span>{% if not activity.counts_for_attendance_statistics %} <span class="muted">Diese Gruppenstunde wird nicht in Anwesenheitsstatistiken oder Fehlserien berücksichtigt.</span>{% endif %}</p>{% endif %}</div><div class="actions">{% if activity.attendance_completed %}<span class="badge completed">Abgeschlossen</span>{% endif %}<a class="button secondary small" href="{% url 'incidents:create' %}?activity={{ activity.pk }}">Vorfall dokumentieren</a><a class="button secondary small" href="{% url 'activities:update' activity.pk %}">Bearbeiten</a><a class="button secondary small" href="{% url 'activities:delete' activity.pk %}">Löschen</a></div></div>
+<h2 class="attendance-section-title">Jugendfeuerwehr-Mitglieder</h2>
+<section class="attendance-toolbar card"><div class="attendance-counts"><span><strong data-count-scope="member" data-count="present">{{ counts.present }}</strong> anwesend</span><span><strong data-count-scope="member" data-count="excused">{{ counts.excused }}</strong> entschuldigt</span><span><strong data-count-scope="member" data-count="unexcused">{{ counts.unexcused }}</strong> unentschuldigt</span></div><div class="toolbar-actions"><form method="post" action="{% url 'activities:attendance_bulk' activity.pk %}">{% csrf_token %}<input type="hidden" name="status" value="present"><button class="button secondary small" type="submit">Alle anwesend</button></form></div></section>
+<div class="attendance-legend" aria-hidden="true"><span>Name</span><span>A</span><span>E</span><span>U</span></div>
+<section class="attendance-list">{% for row in rows %}<article class="attendance-row {% if row.source == 'leave' %}is-leave{% endif %}" data-row data-update-url="{% url 'activities:attendance_update' activity.pk row.pk %}"><div class="member-name"><strong>{{ row.member.first_name }} {{ row.member.last_name }}</strong><small>{{ row.member.get_activity_status_display }}{% if row.source == 'leave' %} · automatisch{% endif %}</small></div><div class="status-picker" role="radiogroup" aria-label="Anwesenheit von {{ row.member.first_name }} {{ row.member.last_name }}">{% for value,label in status_choices %}<button type="button" class="status-button status-{{ value }} {% if row.status == value %}is-active{% endif %}" data-status="{{ value }}" title="{{ label }}" aria-label="{{ label }}" aria-pressed="{% if row.status == value %}true{% else %}false{% endif %}">{% if value == 'present' %}A{% elif value == 'excused' %}E{% else %}U{% endif %}</button>{% endfor %}</div></article>{% endfor %}</section>
+<div class="attendance-section-separator"></div>
+<h2 class="attendance-section-title">Betreuer</h2>
+<section class="attendance-toolbar card"><div class="attendance-counts"><span><strong data-count-scope="supervisor" data-count="present">{{ supervisor_counts.present }}</strong> anwesend</span><span><strong data-count-scope="supervisor" data-count="excused">{{ supervisor_counts.excused }}</strong> entschuldigt</span><span><strong data-count-scope="supervisor" data-count="unexcused">{{ supervisor_counts.unexcused }}</strong> unentschuldigt</span></div><div class="toolbar-actions"><form method="post" action="{% url 'activities:supervisor_attendance_bulk' activity.pk %}">{% csrf_token %}<input type="hidden" name="status" value="present"><button class="button secondary small" type="submit">Alle Betreuer anwesend</button></form></div></section>
+<div class="attendance-legend" aria-hidden="true"><span>Name</span><span>A</span><span>E</span><span>U</span></div>
+<section class="attendance-list">{% for row in supervisor_rows %}<article class="attendance-row {% if row.source == 'leave' %}is-leave{% endif %}" data-row data-scope="supervisor" data-update-url="{% url 'activities:supervisor_attendance_update' activity.pk row.pk %}"><div class="member-name"><strong>{{ row.supervisor.first_name }} {{ row.supervisor.last_name }}</strong><small>{{ row.supervisor.get_activity_status_display }}{% if row.supervisor.functions.exists %} · {% for function in row.supervisor.functions.all %}{{ function.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% if row.source == 'leave' %} · automatisch{% endif %}</small></div><div class="status-picker" role="radiogroup" aria-label="Anwesenheit von {{ row.supervisor.first_name }} {{ row.supervisor.last_name }}">{% for value,label in supervisor_status_choices %}<button type="button" class="status-button status-{{ value }} {% if row.status == value %}is-active{% endif %}" data-status="{{ value }}" title="{{ label }}" aria-label="{{ label }}" aria-pressed="{% if row.status == value %}true{% else %}false{% endif %}">{% if value == 'present' %}A{% elif value == 'excused' %}E{% else %}U{% endif %}</button>{% endfor %}</div></article>{% empty %}<section class="card empty-state"><p>Keine aktiven Betreuer vorhanden.</p></section>{% endfor %}</section>
+
+<div class="attendance-section-separator"></div>
+<section class="attendance-todo-section">
+  <div class="section-heading"><div><p class="eyebrow">Kinder / Eltern</p><h2 class="attendance-section-title">Offene To-Dos</h2><p class="muted">Hier können Punkte gesammelt für den heutigen Termin abgearbeitet werden.</p></div></div>
+  {% if todo_groups %}
+  <div class="attendance-todo-groups">
+    {% for group in todo_groups %}
+    <article class="card attendance-todo-card">
+      <div class="attendance-todo-head">
+        <div><strong>{{ group.todo.title }}</strong><div class="muted small">Deadline {{ group.todo.deadline|date:'d.m.Y' }} · {{ group.todo.get_target_type_display }} · {{ group.open_count }} offen</div></div>
+        <form method="post" action="{% url 'todos:complete_present_members' group.todo.pk activity.pk %}">{% csrf_token %}<button class="button secondary small" type="submit">✓ Alle Anwesenden erledigt</button></form>
+      </div>
+      {% if group.todo.description %}<p class="muted">{{ group.todo.description }}</p>{% endif %}
+      <details class="todo-member-details"><summary>Einzelne Mitglieder anzeigen ({{ group.open_count }})</summary>
+        <div class="todo-member-checklist">
+        {% for point in group.statuses %}
+          <form method="post" action="{% url 'todos:member_complete' group.todo.pk point.pk %}" class="todo-member-line">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><span>{{ point.member.first_name }} {{ point.member.last_name }}</span><button class="button secondary small" type="submit">Erledigt</button></form>
+        {% endfor %}
+        </div>
+      </details>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}<div class="card empty-state"><p>Keine offenen To-Dos mit Kindern oder Eltern.</p></div>{% endif %}
+</section>
+<div class="save-indicator" data-save-indicator>Bereit</div>
+<form method="post" action="{% url 'activities:attendance_complete' activity.pk %}" class="sticky-actions attendance-footer">{% csrf_token %}<a class="button secondary" href="{% url 'activities:list' %}">Zurück</a><button class="button" type="submit">Anwesenheit abschließen</button></form>
+</div>
+<script src="{% static 'js/attendance.js' %}" defer></script>
+{% endblock %}

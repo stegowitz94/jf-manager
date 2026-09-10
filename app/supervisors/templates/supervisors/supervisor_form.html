@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Betreuer bearbeiten{% else %}Betreuer anlegen{% endif %} · JF-Manager{% endblock %}
+{% block content %}<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'supervisors:list' %}">Betreuer</a><span>›</span><span>Bearbeiten</span></div><div class="page-header"><a class="back-link" href="{% if object %}{% url 'supervisors:detail' object.pk %}{% else %}{% url 'supervisors:list' %}{% endif %}">← Zurück</a><div><h1>{% if object %}Betreuer bearbeiten{% else %}Betreuer anlegen{% endif %}</h1></div></div><form method="post" enctype="multipart/form-data" class="card" novalidate>{% csrf_token %}<div class="form-grid">{% for field in form %}{% if field.name == 'profile_image' %}<div class="field span-full"><label>Profilbild</label><div id="profile-image-placeholder" class="muted">Noch kein neues Bild ausgewählt.</div>{% if object.profile_image %}<img id="profile-image-preview" class="profile-preview" src="{{ object.profile_image.url }}" alt="Profilbild">{% endif %}<div class="image-actions"><label class="button secondary">📷 Foto aufnehmen<input class="visually-hidden" type="file" name="profile_image" accept="image/*" capture="environment"></label><label class="button secondary">🖼 Bild auswählen<input class="visually-hidden" type="file" name="profile_image" accept="image/*"></label></div>{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>{% elif field.name == 'functions' %}<div class="field span-full"><label>{{ field.label }}</label><div class="checkbox-grid">{{ field }}</div>{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>{% else %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>{% endif %}{% endfor %}</div><div class="actions"><button class="button" type="submit">Speichern</button><a class="button secondary" href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'supervisors:list' %}{% endif %}">Abbrechen</a></div></form>
+<script>
+const imageInputs = document.querySelectorAll('input[type="file"][name="profile_image"]');
+const placeholder = document.getElementById('profile-image-placeholder');
+let preview = document.getElementById('profile-image-preview');
+imageInputs.forEach(input => input.addEventListener('change', () => {
+  if (!input.files.length) return;
+  imageInputs.forEach(other => { if (other !== input) other.value = ''; });
+  if (!preview) {
+    preview = document.createElement('img');
+    preview.id = 'profile-image-preview';
+    preview.className = 'profile-preview';
+    placeholder.insertAdjacentElement('beforebegin', preview);
+  }
+  preview.src = URL.createObjectURL(input.files[0]);
+  preview.alt = 'Vorschau des ausgewählten Profilbilds';
+  placeholder.textContent = '✓ Neues Profilbild ausgewählt';
+});
+</script>
+{% endblock %}

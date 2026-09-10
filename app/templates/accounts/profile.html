@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Mein Profil · JF-Manager{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'core:dashboard' %}">← Zurück zum Dashboard</a>
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Benutzerkonto</p>
+    <h1>Mein Profil</h1>
+    <p class="muted">Persönliche Angaben und Kontoinformationen.</p>
+  </div>
+  <a class="button secondary" href="{% url 'accounts:password_change' %}">Passwort ändern</a>
+</header>
+
+<div class="profile-overview-grid">
+  <section class="card profile-summary-card">
+    <div class="profile-avatar-large">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
+    <div>
+      <h2>{{ user.get_full_name|default:user.username }}</h2>
+      <p class="muted">{{ user.get_role_display }}</p>
+    </div>
+    <dl class="profile-meta">
+      <dt>Benutzername</dt><dd>{{ user.username }}</dd>
+      <dt>Zugeordneter Betreuer</dt><dd>{% if user.supervisor %}<a href="{% url 'supervisors:detail' user.supervisor.pk %}">{{ user.supervisor }}</a>{% else %}—{% endif %}</dd>
+      <dt>Letzte Anmeldung</dt><dd>{{ user.last_login|date:"d.m.Y H:i"|default:"Noch nie" }}</dd>
+      <dt>Konto erstellt</dt><dd>{{ user.date_joined|date:"d.m.Y H:i" }}</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Persönliche Angaben</h2>
+    <form method="post" class="form-grid compact">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="field{% if field.name == 'email' %} span-full{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+      <div class="span-full actions">
+        <button class="button" type="submit">Profil speichern</button>
+        <a class="button secondary" href="{% url 'notifications:list' %}">Benachrichtigungen</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

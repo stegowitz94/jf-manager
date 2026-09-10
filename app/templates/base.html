@@ -1,0 +1,95 @@
+{% load static %}
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111318">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JF-Manager">
+  <link rel="manifest" href="{% url 'core:manifest' %}">
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+  <title>{% block title %}JF-Manager{% endblock %}</title>
+  <script>document.documentElement.dataset.theme=localStorage.getItem('jf-theme')||'dark';</script>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+{% if user.is_authenticated %}
+<header class="mobile-topbar"><button class="icon-button" type="button" data-nav-toggle aria-label="Navigation öffnen">☰</button><a class="brand" href="/">{% if app_settings.logo %}<img class="brand-logo-mobile" src="{{ app_settings.logo.url }}" alt="">{% endif %}{{ app_settings.short_name|default:"JF-Manager" }}</a><button class="icon-button" type="button" data-theme-toggle aria-label="Farbschema wechseln">◐</button></header>
+<div class="app-shell">
+  <aside class="sidebar" data-sidebar>
+    <div class="sidebar-brand">{% if app_settings.logo %}<img class="brand-logo" src="{{ app_settings.logo.url }}" alt="Logo {{ app_settings.organisation_name }}">{% else %}<span class="brand-mark">JF</span>{% endif %}<div><strong>{{ app_settings.short_name|default:"JF-Manager" }}</strong><small>{{ app_settings.organisation_name }}</small></div></div>
+    <div class="sidebar-menu-search"><span class="sidebar-search-icon" aria-hidden="true">⌕</span><input type="search" placeholder="Menü durchsuchen…" aria-label="Menü durchsuchen" data-menu-search></div>
+    <nav class="sidebar-nav" data-sidebar-nav>
+      <a href="/" class="nav-item" data-menu-label="Dashboard"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Dashboard</span></a>
+      <a href="{% url 'core:search' %}" class="nav-item" data-menu-label="Suche globale Suche"><span class="nav-icon" aria-hidden="true">⌕</span><span class="nav-label">Suche</span><small class="kbd">Ctrl K</small></a>
+
+      <div class="nav-section-label">Verwaltung</div>
+      <a href="{% url 'members:list' %}" class="nav-item" data-menu-label="Mitglieder"><span class="nav-icon" aria-hidden="true">♟</span><span class="nav-label">Mitglieder</span></a>
+      {% if user.is_superuser or user.role == "admin" or user.role == "youth_warden" or user.role == "deputy_youth_warden" %}<a href="{% url 'supervisors:list' %}" class="nav-item" data-menu-label="Betreuer"><span class="nav-icon" aria-hidden="true">♜</span><span class="nav-label">Betreuer</span></a>{% endif %}
+      {% if user.is_superuser or user.role == "admin" or user.role == "youth_warden" or user.role == "deputy_youth_warden" %}<a href="{% url 'waitinglist:list' %}" class="nav-item" data-menu-label="Warteliste"><span class="nav-icon" aria-hidden="true">⌛</span><span class="nav-label">Warteliste</span></a>{% endif %}
+      <a href="{% url 'activities:list' %}" class="nav-item" data-menu-label="Termine Kalender"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-label">Termine</span></a>
+      <a href="{% url 'todos:list' %}" class="nav-item" data-menu-label="To-Dos Aufgaben"><span class="nav-icon" aria-hidden="true">✓</span><span class="nav-label">To-Dos</span></a>
+      {% if user.is_superuser or user.role == "admin" or user.role == "youth_warden" or user.role == "deputy_youth_warden" or user.role == "supervisor" %}<a href="{% url 'incidents:list' %}" class="nav-item" data-menu-label="Vorfälle Unfälle Dokumentation"><span class="nav-icon" aria-hidden="true">⚠</span><span class="nav-label">Vorfälle & Unfälle</span></a>{% endif %}
+      <a href="{% url 'activities:create' %}" class="nav-item nav-accent" data-menu-label="Schnellerfassung neuer Termin"><span class="nav-icon" aria-hidden="true">＋</span><span class="nav-label">Schnellerfassung</span></a>
+
+      {% if user.is_superuser or user.role == "admin" or user.role == "youth_warden" or user.role == "deputy_youth_warden" %}<div class="nav-section-label">Auswertung & Dokumente</div>
+      <a href="{% url 'statistics:overview' %}" class="nav-item" data-menu-label="Statistiken"><span class="nav-icon" aria-hidden="true">▥</span><span class="nav-label">Statistiken</span></a>
+      <a href="{% url 'documents:center' %}" class="nav-item" data-menu-label="Dokumente Exporte"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">Dokumente</span></a>
+      <a href="{% url 'notifications:list' %}" class="nav-item" data-menu-label="Benachrichtigungen Push E-Mail"><span class="nav-icon" aria-hidden="true">✉</span><span class="nav-label">Benachrichtigungen</span></a>{% endif %}
+
+      {% if external_links %}<div class="nav-section-label">Werkzeuge</div>{% for link in external_links %}<a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="nav-item" data-menu-label="{{ link.name }}"><span class="nav-icon" aria-hidden="true">{{ link.icon }}</span><span class="nav-label">{{ link.name }}</span></a>{% endfor %}{% endif %}
+
+      {% if user.is_superuser or user.role == "admin" or user.role == "youth_warden" or user.role == "deputy_youth_warden" %}<div class="nav-section-label">System</div><a href="{% url 'core:system_status' %}" class="nav-item" data-menu-label="Systemstatus Diagnose"><span class="nav-icon" aria-hidden="true">◉</span><span class="nav-label">Systemstatus</span></a>{% endif %}{% if user.is_superuser or user.role == "admin" %}<a href="{% url 'core:backup_center' %}" class="nav-item" data-menu-label="Backup Sicherung Wiederherstellung"><span class="nav-icon" aria-hidden="true">⇩</span><span class="nav-label">Backup</span></a><a href="{% url 'audit:list' %}" class="nav-item" data-menu-label="Audit Protokoll Änderungen"><span class="nav-icon" aria-hidden="true">☷</span><span class="nav-label">Audit-Protokoll</span></a>{% endif %}
+      {% if user.is_staff %}<a href="/admin/" class="nav-item" data-menu-label="Administration Django Admin"><span class="nav-icon" aria-hidden="true">⚙</span><span class="nav-label">Administration</span></a>{% endif %}
+      <div class="menu-empty" data-menu-empty hidden>Kein Menüpunkt gefunden.</div>
+    </nav>
+    <div class="sidebar-footer">
+      <a class="user-chip user-chip-link" href="{% url 'accounts:profile' %}"><span class="avatar">{{ user.username|slice:':1'|upper }}</span><div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{{ user.get_role_display }}</small></div><span class="user-chevron">›</span></a>
+      <div class="sidebar-legal"><small>JF-Manager · AGPL-3.0-or-later</small>{% if source_code_url %}<a href="{{ source_code_url }}" target="_blank" rel="noopener noreferrer">Quellcode</a>{% endif %}</div>
+      <div class="account-actions">
+        <a href="{% url 'accounts:profile' %}"><span class="account-icon" aria-hidden="true">👤</span><span>Mein Profil</span></a>
+        <a href="{% url 'accounts:password_change' %}"><span class="account-icon" aria-hidden="true">🔒</span><span>Passwort ändern</span></a>
+        <button type="button" data-theme-toggle><span class="account-icon" aria-hidden="true">◐</span><span>Darstellung wechseln</span></button>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout-action" type="submit"><span class="account-icon" aria-hidden="true">↪</span><span>Abmelden</span></button></form>
+      </div>
+    </div>
+  </aside>
+  <button class="nav-backdrop" data-nav-backdrop aria-label="Navigation schließen"></button>
+  <main class="main-content"><div class="content-wrap">
+{% else %}
+<main class="login-shell"><div style="width:100%">
+{% endif %}
+<div class="pwa-update" data-pwa-update hidden><span>Neue Version verfügbar.</span><button class="button small" type="button" data-pwa-update-action>Jetzt aktualisieren</button></div>
+<button class="pwa-install button small" type="button" data-pwa-install hidden>App installieren</button><div class="ios-install-hint" data-ios-install-hint hidden><strong>JF-Manager installieren</strong><span>In Safari: <b>Teilen</b> → <b>Zum Home-Bildschirm</b> → <b>Hinzufügen</b></span><button type="button" data-ios-install-close aria-label="Hinweis schließen">×</button></div>
+<div class="toast-stack">{% for message in messages %}<div class="message toast {{ message.tags }}" data-toast>{{ message }}</div>{% endfor %}</div>
+{% block content %}{% endblock %}
+{% if user.is_authenticated %}</div></main><nav class="mobile-bottom-nav"><a href="/">⌂<span>Dashboard</span></a><a href="{% url 'members:list' %}">♟<span>Mitglieder</span></a><a class="bottom-primary" href="{% url 'activities:create' %}">＋<span>Termin</span></a><a href="{% url 'activities:list' %}">◷<span>Termine</span></a><a href="{% url 'accounts:profile' %}">♙<span>Profil</span></a></nav></div>{% else %}</div></main>{% endif %}
+<script>
+(function(){
+ const html=document.documentElement;
+ document.querySelectorAll('[data-theme-toggle]').forEach(b=>b.addEventListener('click',()=>{const next=html.dataset.theme==='dark'?'light':'dark';html.dataset.theme=next;localStorage.setItem('jf-theme',next);}));
+ const sidebar=document.querySelector('[data-sidebar]'); const backdrop=document.querySelector('[data-nav-backdrop]');
+ function toggle(open){sidebar?.classList.toggle('is-open',open);backdrop?.classList.toggle('is-open',open)}
+ document.querySelector('[data-nav-toggle]')?.addEventListener('click',()=>toggle(true)); document.querySelector('[data-nav-toggle-bottom]')?.addEventListener('click',()=>toggle(true)); backdrop?.addEventListener('click',()=>toggle(false));
+ document.querySelectorAll("[data-toast]").forEach((t,i)=>setTimeout(()=>t.classList.add("toast-hide"),3200+i*250));
+ 
+ const menuSearch=document.querySelector('[data-menu-search]');
+ const menuItems=[...document.querySelectorAll('[data-menu-label]')];
+ const sectionLabels=[...document.querySelectorAll('.sidebar-nav .nav-section-label')];
+ const menuEmpty=document.querySelector('[data-menu-empty]');
+ menuSearch?.addEventListener('input',()=>{
+   const q=menuSearch.value.trim().toLowerCase(); let visible=0;
+   menuItems.forEach(item=>{const show=!q||(item.dataset.menuLabel||'').toLowerCase().includes(q);item.hidden=!show;if(show)visible++;});
+   sectionLabels.forEach(label=>label.hidden=!!q);
+   if(menuEmpty)menuEmpty.hidden=visible>0;
+ });
+})();
+</script>
+<div class="command-palette" data-command-palette hidden><button class="command-backdrop" type="button" data-command-close aria-label="Suche schließen"></button><div class="command-dialog" role="dialog" aria-modal="true" aria-label="Globale Suche"><div class="command-input-wrap"><span>⌕</span><input type="search" placeholder="Mitglieder, Betreuer, Warteliste oder Termine …" data-command-input autocomplete="off"><kbd>Esc</kbd></div><div class="command-results" data-command-results><p class="muted">Mindestens zwei Zeichen eingeben.</p></div></div></div>
+<script>window.JF_SEARCH_API="{% url 'core:search_api' %}";</script>
+<script src="{% static 'js/ui-preferences.js' %}" defer></script>
+<script src="{% static 'js/pwa.js' %}" defer></script>
+</body>
+</html>

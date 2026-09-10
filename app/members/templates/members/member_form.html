@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · JF-Manager{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><a href="{% url 'members:list' %}">Mitglieder</a><span>›</span><span>{{ title }}</span></div>
+<div class="page-header"><div><h1>{{ title }}</h1><p class="muted">Mitglied und mindestens eine erziehungsberechtigte Person erfassen</p></div></div>
+<form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+  <div class="card"><h2>Mitgliedsdaten</h2><div class="form-grid">
+    {% for field in form %}
+      {% if field.name in "sequential_number,first_name,last_name,gender,entry_date,jf_card_number,activity_status,birth_date,street,postal_code,city,phone,mobile,email" %}
+      <div class="field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+      {% endif %}
+    {% endfor %}
+  </div></div>
+
+  <div class="card"><h2>Profilbild und Einwilligungen</h2>
+    <div class="form-grid">
+      <div class="field span-full"><label>Profilbild</label><div id="profile-image-placeholder" class="muted">Noch kein neues Bild ausgewählt.</div>
+        {% if member.profile_image %}<img id="profile-image-preview" class="profile-preview" src="{{ member.profile_image.url }}" alt="Profilbild von {{ member.first_name }} {{ member.last_name }}">{% endif %}
+        <div class="image-actions">
+          <label class="button secondary">📷 Foto aufnehmen<input class="visually-hidden" type="file" name="profile_image" accept="image/*" capture="environment"></label>
+          <label class="button secondary">🖼 Bild auswählen<input class="visually-hidden" type="file" name="profile_image" accept="image/*"></label>
+        </div>
+        {% for error in form.profile_image.errors %}<div class="error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="field checkbox-field"><label>{{ form.photo_video_permission }} <span>{{ form.photo_video_permission.label }}</span></label>{% for error in form.photo_video_permission.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+      <div class="field checkbox-field"><label>{{ form.divera_permission }} <span>{{ form.divera_permission.label }}</span></label>{% for error in form.divera_permission.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+    </div>
+  </div>
+
+  <div class="card"><h2>Schule, Beruf und weitere Organisationen</h2><p class="muted">Alle Angaben in diesem Abschnitt sind freiwillig.</p><div class="form-grid">
+    {% for field in form %}{% if field.name in "school_or_employer,vocational_training,career_goal,other_organizations" %}
+      <div class="field {% if field.name == 'other_organizations' %}span-full{% endif %} {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+    {% endif %}{% endfor %}
+  </div></div>
+
+  <div class="card sensitive-card"><h2>🔒 Gesundheit und Versorgung</h2><p class="muted">Freiwillige und besonders schützenswerte Angaben. Bitte nur Informationen eintragen, die für Betreuung und Sicherheit tatsächlich benötigt werden. Diese Daten erscheinen nicht in Standardlisten oder normalen Exporten.</p><div class="form-grid">
+    <div class="field span-full"><label for="{{ form.health_notes.id_for_label }}">{{ form.health_notes.label }}</label>{{ form.health_notes }}{% for error in form.health_notes.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+    <div class="field"><label for="{{ form.swimming_status.id_for_label }}">{{ form.swimming_status.label }}</label>{{ form.swimming_status }}{% for error in form.swimming_status.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+    <div class="field"><label for="{{ form.health_insurance.id_for_label }}">{{ form.health_insurance.label }}</label>{{ form.health_insurance }}{% for error in form.health_insurance.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>
+  </div></div>
+
+  {% for error in form.non_field_errors %}<div class="error">{{ error }}</div>{% endfor %}
+  <div class="card"><h2>Erziehungsberechtigte</h2>{{ guardian_formset.management_form }}
+  {% for error in guardian_formset.non_form_errors %}<div class="error">{{ error }}</div>{% endfor %}
+  <div class="guardian-grid">{% for guardian_form in guardian_formset %}<section class="subcard"><h3>Kontakt {{ forloop.counter }}</h3>{{ guardian_form.id }}<div class="form-grid compact">
+  {% for field in guardian_form.visible_fields %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}</div>{% endfor %}
+  </div></section>{% endfor %}</div></div>
+  <div class="actions"><button class="button" type="submit">Speichern</button>{% if member.pk %}<a class="button secondary" href="{{ member.get_absolute_url }}">Abbrechen</a>{% else %}<a class="button secondary" href="{% url 'members:list' %}">Abbrechen</a>{% endif %}</div>
+</form>
+<script>
+const imageInputs = document.querySelectorAll('input[type="file"][name="profile_image"]');
+const placeholder = document.getElementById('profile-image-placeholder');
+let preview = document.getElementById('profile-image-preview');
+imageInputs.forEach(input => input.addEventListener('change', () => {
+  if (!input.files.length) return;
+  imageInputs.forEach(other => { if (other !== input) other.value = ''; });
+  if (!preview) { preview = document.createElement('img'); preview.id='profile-image-preview'; preview.className='profile-preview'; placeholder.insertAdjacentElement('beforebegin', preview); }
+  preview.src = URL.createObjectURL(input.files[0]); preview.alt='Vorschau des ausgewählten Profilbilds'; placeholder.textContent='✓ Neues Profilbild ausgewählt';
+}));
+</script>
+<style>.sensitive-card{border-left:4px solid var(--warning,#d89b18)}</style>
+{% endblock %}

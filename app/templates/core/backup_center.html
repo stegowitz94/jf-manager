@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Backup & Wiederherstellung · JF-Manager{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumbs"><a href="{% url 'core:dashboard' %}">Dashboard</a><span>›</span><span>System</span><span>›</span><strong>Backup</strong></div>
+    <h1>Backup & Wiederherstellung</h1>
+    <p class="muted">Vollständige Sicherung von Datenbank, Profilbildern, Logo und weiteren Uploads.</p>
+  </div>
+  <a class="button secondary" href="{% url 'core:system_status' %}">← Systemstatus</a>
+</div>
+
+<div class="backup-grid">
+  <section class="card backup-card">
+    <div class="backup-card-icon">↓</div>
+    <div>
+      <h2>Backup herunterladen</h2>
+      <p>Erstellt ein ZIP-Archiv mit der vollständigen PostgreSQL-Datenbank und allen Mediendateien.</p>
+      <div class="notice warning compact"><strong>Sensibler Inhalt:</strong> Das Archiv kann personenbezogene und gesundheitliche Daten enthalten. Bewahre es verschlüsselt und zugriffsgeschützt auf.</div>
+      <form method="post" action="{% url 'core:backup_download' %}">
+        {% csrf_token %}
+        <button class="button primary" type="submit">Vollständiges ZIP-Backup erstellen</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card backup-card danger-zone">
+    <div class="backup-card-icon danger">↻</div>
+    <div>
+      <h2>Backup wiederherstellen</h2>
+      <p>Ersetzt die aktuelle Datenbank und alle Uploads durch den Stand aus dem ausgewählten Archiv.</p>
+      <div class="notice danger compact">
+        <strong>Achtung:</strong> Während der Wiederherstellung darf niemand Daten bearbeiten. Vor dem Einspielen wird automatisch ein Sicherheitsbackup angelegt. Nach Abschluss ist eine erneute Anmeldung erforderlich.
+      </div>
+      <form method="post" action="{% url 'core:backup_restore' %}" enctype="multipart/form-data" class="stacked-form" data-restore-form>
+        {% csrf_token %}
+        <label>JF-Manager-Backup (.zip, maximal {{ max_upload_size }})
+          <input type="file" name="backup_file" accept=".zip,application/zip" required>
+        </label>
+        <label>Aktuelles Administratorkennwort
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <label>Zur Bestätigung exakt eingeben: <code>{{ confirmation_text }}</code>
+          <input type="text" name="confirmation" autocomplete="off" required>
+        </label>
+        <label class="checkbox-line"><input type="checkbox" name="acknowledge" required> Ich verstehe, dass der aktuelle Datenstand durch das Backup ersetzt wird.</label>
+        <button class="button danger" type="submit">Backup jetzt wiederherstellen</button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<section class="card section-card backup-history">
+  <div class="section-heading">
+    <div><h2>Automatische Sicherheitsbackups</h2><p>Diese Sicherungen werden unmittelbar vor einer Wiederherstellung erstellt.</p></div>
+  </div>
+  {% if safety_backups %}
+  <div class="responsive-table"><table>
+    <thead><tr><th>Datei</th><th>Erstellt</th><th>Größe</th><th></th></tr></thead>
+    <tbody>{% for backup in safety_backups %}<tr>
+      <td><strong>{{ backup.filename }}</strong></td>
+      <td>{{ backup.created_at|date:"d.m.Y H:i" }} Uhr</td>
+      <td>{{ backup.size }}</td>
+      <td class="table-actions"><a class="button small secondary" href="{% url 'core:safety_backup_download' backup.filename %}">Herunterladen</a></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty-state compact"><strong>Noch kein Sicherheitsbackup vorhanden.</strong><span>Es wird automatisch vor der ersten Wiederherstellung angelegt.</span></div>{% endif %}
+</section>
+
+<script>
+document.querySelector('[data-restore-form]')?.addEventListener('submit', function(event) {
+  if (!window.confirm('Soll der aktuelle Datenstand wirklich vollständig durch dieses Backup ersetzt werden?')) event.preventDefault();
+});
+</script>
+{% endblock %}

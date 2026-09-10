@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Vorfälle & Unfälle · JF-Manager{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <a class="back-link" href="{% url 'incidents:list' %}">← Zurück</a>
+    <p class="eyebrow">Vertrauliche Dokumentation</p>
+    <h1>Neue Dokumentation</h1>
+    <p class="muted">Bitte auswählen, ob ein allgemeiner Vorfall oder ein Unfall dokumentiert werden soll.</p>
+  </div>
+</div>
+<div class="record-choice-grid">
+  <a class="card record-choice" href="{% url 'incidents:create_incident' %}{% if activity_id %}?activity={{ activity_id }}{% endif %}">
+    <div class="record-choice-icon">⚠</div>
+    <div>
+      <h2>Vorfall</h2>
+      <p class="muted">Konflikte, Regelverstöße, Sachschäden oder sonstige besondere Vorkommnisse dokumentieren.</p>
+    </div>
+  </a>
+  <a class="card record-choice accident" href="{% url 'incidents:create_accident' %}{% if activity_id %}?activity={{ activity_id }}{% endif %}">
+    <div class="record-choice-icon">✚</div>
+    <div>
+      <h2>Unfall</h2>
+      <p class="muted">Unfälle und Verletzungen mit Erste-Hilfe-Maßnahmen sowie optionaler Meldung an die Wehrführung erfassen.</p>
+    </div>
+  </a>
+</div>
+{% endblock %}

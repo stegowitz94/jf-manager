@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Systemstatus · JF-Manager{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/">Dashboard</a><span>›</span><span>Systemstatus</span></div><header class="page-header">
+  <div>
+    <p class="eyebrow">Administration</p>
+    <h1>Systemstatus</h1>
+    <p class="muted">Technischer Überblick über die laufende JF-Manager-Installation.</p>
+  </div>
+  <a class="button secondary" href="/admin/">Django-Administration</a>
+</header>
+
+<section class="system-check-grid">
+  {% for check in checks %}
+  <article class="card system-check {% if check.ok %}is-ok{% else %}is-error{% endif %}">
+    <div class="system-check-heading">
+      <span class="status-dot" aria-hidden="true"></span>
+      <strong>{{ check.label }}</strong>
+    </div>
+    <p>{{ check.detail }}</p>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="dashboard-grid">
+  <article class="card">
+    <h2>Versionen</h2>
+    <dl>
+      <dt>JF-Manager</dt><dd>{{ app_version }}</dd>
+      <dt>Django</dt><dd>{{ django_version }}</dd>
+      <dt>Python</dt><dd>{{ python_version }}</dd>
+      <dt>psycopg</dt><dd>{{ psycopg_version }}</dd>
+    </dl>
+  </article>
+  <article class="card">
+    <h2>Datenbestand</h2>
+    <dl>
+      <dt>Mitglieder</dt><dd>{{ counts.members }}</dd>
+      <dt>Betreuer</dt><dd>{{ counts.supervisors }}</dd>
+      <dt>Termine</dt><dd>{{ counts.activities }}</dd>
+      <dt>Profilbilder</dt><dd>{{ media_size }}</dd>
+    </dl>
+  </article>
+  <article class="card">
+    <h2>Speicher</h2>
+    <dl>
+      <dt>Frei</dt><dd>{{ disk_free }}</dd>
+      <dt>Gesamt</dt><dd>{{ disk_total }}</dd>
+      <dt>Backup-Verzeichnis</dt><dd class="muted">Siehe Statusprüfung oben</dd>
+    </dl>
+  </article>
+  <article class="card">
+    <h2>E-Mail</h2>
+    <p class="{% if smtp_configured %}status-text-ok{% else %}status-text-warning{% endif %}">
+      {% if smtp_configured %}Konfiguriert{% else %}Nicht vollständig konfiguriert{% endif %}
+    </p>
+    <p class="muted">{{ smtp_detail }}</p>
+    <p class="muted">Absender: {{ default_from_email }}</p>
+    <form method="post" action="{% url 'core:send_test_email' %}" class="testmail-form">
+      {% csrf_token %}
+      <label for="testmail-recipient">Empfänger der Testmail</label>
+      <div class="inline-form">
+        <input id="testmail-recipient" type="email" name="recipient" value="{{ request.user.email }}" placeholder="name@example.org" required>
+        <button class="button" type="submit">Testmail senden</button>
+      </div>
+    </form>
+  </article>
+</section>
+{% endblock %}

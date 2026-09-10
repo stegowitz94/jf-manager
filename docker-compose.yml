@@ -1,0 +1,98 @@
+name: jf-manager
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    secrets: &app_secrets
+      - postgres_password
+      - django_secret_key
+      - smtp_password
+      - vapid_private_key
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+      - backup_data:/app/backups
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    secrets: *app_secrets
+    command: ["celery", "-A", "config", "worker", "-l", "INFO"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    secrets: *app_secrets
+    command: ["celery", "-A", "config", "beat", "-l", "INFO", "--schedule", "/tmp/celerybeat-schedule"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  django_secret_key:
+    file: ./secrets/django_secret_key.txt
+  smtp_password:
+    file: ./secrets/smtp_password.txt
+  vapid_private_key:
+    file: ./secrets/vapid_private_key.txt
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_data:
+  media_data:
+  backup_data:

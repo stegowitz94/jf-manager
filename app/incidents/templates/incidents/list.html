@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Vorfälle & Unfälle · JF-Manager{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><p class="eyebrow">Interne Dokumentation</p><h1>Vorfälle & Unfälle</h1><p class="muted">Vorfall- und Unfalldokumentationen werden getrennt erfasst. Inhalte erscheinen nicht in der globalen Suche oder Standardexporten.</p></div>
+  <div class="actions"><a class="button secondary" href="{% url 'incidents:create_incident' %}">+ Vorfall</a><a class="button" href="{% url 'incidents:create_accident' %}">+ Unfall</a></div>
+</div>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Dokumenttyp</th><th>Kategorie</th><th>Bezeichnung</th><th>Termin</th><th></th></tr></thead><tbody>
+{% for i in incidents %}<tr><td>{{ i.occurred_at|date:"d.m.Y H:i" }}</td><td><span class="badge {% if i.record_type == 'accident' %}warning{% endif %}">{{ i.get_record_type_display }}</span></td><td>{% if i.record_type == "incident" %}{{ i.get_kind_display }}{% else %}–{% endif %}</td><td>{{ i.title }}</td><td>{{ i.activity|default:"–" }}</td><td><a class="button secondary small" href="{{ i.get_absolute_url }}">Öffnen</a></td></tr>{% empty %}<tr><td colspan="6">Keine Vorfälle oder Unfälle dokumentiert.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

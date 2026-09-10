@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Mitglieder · JF-Manager{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Mitglieder</h1><p class="muted">Stammdaten und Aktivitätsstatus verwalten</p></div><div class="actions"><a class="button secondary" href="{% url 'members:import' %}">Excel importieren</a><a class="button secondary" href="{% url 'members:export' %}?q={{ query|urlencode }}&status={{ status|urlencode }}">Exportieren</a><a class="button" href="{% url 'members:create' %}">Mitglied anlegen</a></div></div>
+<form class="filterbar" method="get">
+  <input type="search" name="q" value="{{ query }}" placeholder="Name, Nummer oder Ausweisnummer">
+  <select name="status">
+    <option value="">Alle Status</option>
+    <option value="active" {% if status == 'active' %}selected{% endif %}>Aktiv</option>
+    <option value="on_leave" {% if status == 'on_leave' %}selected{% endif %}>Beurlaubt</option>
+    <option value="transition" {% if status == 'transition' %}selected{% endif %}>Übergang</option>
+    <option value="resigned" {% if status == 'resigned' %}selected{% endif %}>Austritt</option>
+  </select>
+  <button class="button secondary" type="submit">Filtern</button><a class="button secondary" href="?reset=1">Zurücksetzen</a>
+</form>
+<div class="table-tools"><details><summary class="button secondary small">Spalten</summary><div class="column-menu" data-column-menu></div></details><label>Zeilen <select data-page-size><option>10</option><option>25</option><option>50</option><option>100</option></select></label></div><form method="post" action="{% url 'members:check_sheets_bulk' %}?q={{ query|urlencode }}&status={{ status|urlencode }}">{% csrf_token %}<div class="actions" style="margin-bottom:1rem"><button class="button secondary" type="submit">Prüfbögen für Auswahl als PDF</button><button class="button secondary" type="submit" formaction="{% url 'members:check_sheets_bulk' %}?q={{ query|urlencode }}&status={{ status|urlencode }}&print=1" formtarget="_blank">Auswahl drucken</button></div><div class="card table-wrap" data-configurable-table data-table-key="members" data-pref-url="{% url 'core:table_preference_api' 'members' %}">
+<table>
+<thead><tr><th data-column="select" data-label="Auswahl"><input type="checkbox" data-select-all aria-label="Alle auswählen"></th><th data-column="number" data-label="Lfd. Nr.">Lfd. Nr.</th><th data-column="name" data-label="Name">Name</th><th data-column="birth" data-label="Geburtsdatum">Geburtsdatum</th><th data-column="city" data-label="Ort">Ort</th><th data-column="status" data-label="Status">Status</th><th data-column="actions" data-label="Aktionen"></th></tr></thead>
+<tbody>
+{% for member in members %}
+<tr><td data-column="select"><input type="checkbox" name="selected" value="{{ member.pk }}"></td><td data-column="number">{{ member.sequential_number }}</td><td data-column="name"><a href="{{ member.get_absolute_url }}">{{ member.last_name }}, {{ member.first_name }}</a></td><td data-column="birth">{{ member.birth_date|date:"d.m.Y" }}</td><td data-column="city">{{ member.postal_code }} {{ member.city }}</td><td data-column="status"><span class="badge status-{{ member.activity_status }}">{{ member.get_activity_status_display }}</span></td><td data-column="actions"><a href="{% url 'members:update' member.pk %}">Bearbeiten</a></td></tr>
+{% empty %}<tr><td colspan="7">Keine Mitglieder gefunden.</td></tr>{% endfor %}
+</tbody></table></div>{% if page_obj.paginator.num_pages > 1 %}<nav class="pagination">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&status={{ status|urlencode }}&gender={{ gender|urlencode }}&page_size={{ table_pref.page_size }}&page={{ page_obj.previous_page_number }}">← Zurück</a>{% endif %}<span>Seite {{ page_obj.number }} von {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&status={{ status|urlencode }}&gender={{ gender|urlencode }}&page_size={{ table_pref.page_size }}&page={{ page_obj.next_page_number }}">Weiter →</a>{% endif %}</nav>{% endif %}</form><script>document.querySelector("[data-select-all]")?.addEventListener("change",e=>document.querySelectorAll("input[name=selected]").forEach(x=>x.checked=e.target.checked));</script>
+{% endblock %}
