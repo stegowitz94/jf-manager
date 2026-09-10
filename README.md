@@ -145,8 +145,8 @@ Die Anwendung wird vollständig über Docker Compose betrieben.
 Voraussetzungen sind ein Linux-Server mit aktuellem Docker und Docker Compose Plugin.
 
 ```bash
-unzip jf-manager-v1.0.0.zip
-cd jf-manager-v1.0.0
+unzip jf-manager-main.zip
+cd jf-manager-main
 
 cp .env.example .env
 bash setup.sh
