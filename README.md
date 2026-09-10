@@ -7,6 +7,8 @@ Sie bündelt Mitgliederverwaltung, Termine, Anwesenheiten, Betreuer, Warteliste,
 
 > JF-Manager ist ein unabhängiges Open-Source-Projekt. Es besteht keine offizielle Verbindung zu Feuerwehrverbänden, Behörden oder den in der Anwendung verlinkten externen Diensten.
 
+Bei der Entwicklung von JF-Manager wurden KI-gestützte Werkzeuge unterstützend eingesetzt. Dies umfasst unter anderem die Unterstützung bei Konzeption, Programmierung, Fehlersuche und Dokumentation. Die Projektentscheidungen, Anforderungen und Verantwortung für die veröffentlichten Inhalte liegen beim Projektverantwortlichen.
+
 ## ✨ Funktionsumfang
 
 ### Mitgliederverwaltung
